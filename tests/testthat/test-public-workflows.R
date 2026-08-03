@@ -2,7 +2,7 @@ test_that("README-style synthetic path workflow runs", {
   d <- make_pattern_sensitivity_data(n = 1200, seed = 9001)
   f <- y ~ x + w | z + w
   fit <- spliv(f, d, method = "uci", delta = 0.05, vcov = "hc1")
-  expect_s3_class(fit, "plausexog_fit")
+  expect_s3_class(fit, "spliv_fit")
   pat <- spliv_pattern(
     "Exposure", ~ treatment_channel_exposure,
     rationale = "Synthetic exposure pattern.", variables_used = "treatment_channel_exposure"
@@ -27,7 +27,8 @@ test_that("confirmatory BPE design workflow is callable on synthetic data", {
   design <- bpe_design(
     "Synthetic inactive subset", ~ inactive,
     rationale = "The treatment channel is absent in the inactive subset.",
-    variables_used = "inactive", pre_specified = TRUE
+    variables_used = "inactive", pre_specified = TRUE,
+    transportability_rationale = "The same direct-effect mechanism applies to the target sample."
   )
   val <- bpe_validate_design(
     y ~ x | z, d, design, vcov = "hc1",

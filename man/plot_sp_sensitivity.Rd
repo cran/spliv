@@ -2,31 +2,29 @@
 % Please edit documentation in R/plotting.R
 \name{plot_sp_sensitivity}
 \alias{plot_sp_sensitivity}
-\alias{plot_conley_sensitivity}
 \title{Plot Patterned Sensitivity Output or a Fitted Object}
 \usage{
 plot_sp_sensitivity(
   df_plot,
-  ylab = "Effect (beta)",
-  main = "Plausibly Exogenous IV Sensitivity",
-  ...
-)
-
-plot_conley_sensitivity(
-  df_plot,
+  term = NULL,
   ylab = "Effect (beta)",
   main = "Plausibly Exogenous IV Sensitivity",
   ...
 )
 }
 \arguments{
-\item{df_plot}{Data frame returned by a sensitivity helper or \code{plausexog_fit} object.}
+\item{df_plot}{Data frame returned by a sensitivity helper or a \code{spliv_fit} object.}
+
+\item{term}{Optional term to plot when \code{df_plot} is a sensitivity-path
+object. If omitted, the first term is plotted (with a warning for multiple
+terms).}
 
 \item{ylab}{Y-axis label.}
 
 \item{main}{Plot title.}
 
-\item{...}{Unused.}
+\item{...}{Additional graphics arguments forwarded to the sensitivity-path
+plotting method; ignored for fitted objects and ordinary data frames.}
 }
 \value{
 Invisibly returns the plotted input.

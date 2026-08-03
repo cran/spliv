@@ -6,13 +6,14 @@
 \title{spliv: Patterned Sensitivity Analysis for IV}
 \description{
 Matrix-based patterned sensitivity analysis for plausibly exogenous IV
-inference with scalable fixed-effect residualization, researcher-specified
+inference with fixed-effect residualization, researcher-specified
 direct-effect patterns, sensitivity paths over delta, and optional
 confirmatory BPE diagnostics.
 }
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://koren6684.github.io/spliv/}
   \item \url{https://github.com/koren6684/spliv}
   \item Report bugs at \url{https://github.com/koren6684/spliv/issues}
 }

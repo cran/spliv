@@ -1,5 +1,6 @@
 .resolve_plot_inputs <- function(formula_or_fit, data = NULL) {
-  if (inherits(formula_or_fit, "plausexog_fit")) {
+  if (inherits(formula_or_fit, "spliv_fit") ||
+      inherits(formula_or_fit, "plausexog_fit")) {
     fit <- formula_or_fit
     return(list(
       y = fit$internals$y,
@@ -61,7 +62,7 @@
 
 #' Build LTZ Prior Matrices for Chosen Instruments
 #'
-#' @param formula Formula or `plausexog_fit`.
+#' @param formula Formula or `spliv_fit`.
 #' @param data Data frame when `formula` is a formula.
 #' @param inst_vary Instrument(s) with non-degenerate prior.
 #' @param mean Prior mean(s).
@@ -101,28 +102,9 @@ sp_prior_ltz <- function(formula, data = NULL,
   list(mu = mu, omega = omega, inst_names = inp$inst_names)
 }
 
-#' @rdname sp_prior_ltz
-#' @export
-conley_prior_ltz <- function(formula, data = NULL,
-                             inst_vary,
-                             mean = 0,
-                             sd = 1,
-                             vcov = c("hc1", "hc0", "iid", "cluster"),
-                             cluster = NULL) {
-  sp_prior_ltz(
-    formula = formula,
-    data = data,
-    inst_vary = inst_vary,
-    mean = mean,
-    sd = sd,
-    vcov = vcov,
-    cluster = cluster
-  )
-}
-
 #' LTZ Sensitivity over Delta Grid
 #'
-#' @param formula Formula or `plausexog_fit`.
+#' @param formula Formula or `spliv_fit`.
 #' @param data Data frame when `formula` is a formula.
 #' @param term Coefficient name to track.
 #' @param inst_vary Instrument(s) with plausible violation.
@@ -135,6 +117,11 @@ conley_prior_ltz <- function(formula, data = NULL,
 #' @param scale_instrument One of `"residual_sd"` (default) or `"none"`.
 #'
 #' @return Data frame with sensitivity path.
+#' @examples
+#' set.seed(10)
+#' d <- data.frame(y = rnorm(60), x = rnorm(60), z = rnorm(60))
+#' sp_sensitivity_ltz_normal(y ~ x | z, d, term = "x", inst_vary = "z",
+#'   delta_grid = c(0, 0.1), scale_instrument = "none")
 #' @export
 sp_sensitivity_ltz_normal <- function(formula, data = NULL,
                                           term,
@@ -149,7 +136,7 @@ sp_sensitivity_ltz_normal <- function(formula, data = NULL,
   vcov <- match.arg(tolower(vcov), c("hc1", "hc0", "iid", "cluster"))
   scale_instrument <- match.arg(scale_instrument)
   inp <- .resolve_plot_inputs(formula, data)
-  if (inherits(formula, "plausexog_fit")) {
+  if (inherits(formula, "spliv_fit") || inherits(formula, "plausexog_fit")) {
     vcov <- inp$vcov
     if (missing(scale_instrument)) {
       scale_instrument <- inp$scale_instrument
@@ -181,7 +168,7 @@ sp_sensitivity_ltz_normal <- function(formula, data = NULL,
       cluster = cluster
     )
 
-    ltz <- sp_ltz_mats(
+    ltz <- .sp_ltz_mats(
       y = inp$y,
       X = inp$X,
       Z = inp$Z,
@@ -209,36 +196,9 @@ sp_sensitivity_ltz_normal <- function(formula, data = NULL,
   do.call(rbind, out)
 }
 
-#' @rdname sp_sensitivity_ltz_normal
-#' @export
-conley_sensitivity_ltz_normal <- function(formula, data = NULL,
-                                          term,
-                                          inst_vary,
-                                          delta_grid,
-                                          mean_fun = function(delta) 0,
-                                          sd_fun = function(delta) delta,
-                                          level = 0.95,
-                                          vcov = c("hc1", "hc0", "iid", "cluster"),
-                                          cluster = NULL,
-                                          scale_instrument = c("residual_sd", "none")) {
-  sp_sensitivity_ltz_normal(
-    formula = formula,
-    data = data,
-    term = term,
-    inst_vary = inst_vary,
-    delta_grid = delta_grid,
-    mean_fun = mean_fun,
-    sd_fun = sd_fun,
-    level = level,
-    vcov = vcov,
-    cluster = cluster,
-    scale_instrument = scale_instrument
-  )
-}
-
 #' UCI Sensitivity over Delta Grid
 #'
-#' @param formula Formula or `plausexog_fit`.
+#' @param formula Formula or `spliv_fit`.
 #' @param data Data frame when `formula` is a formula.
 #' @param term Coefficient name to track.
 #' @param inst_vary Instrument(s) whose gamma bounds vary.
@@ -252,6 +212,11 @@ conley_sensitivity_ltz_normal <- function(formula, data = NULL,
 #' @param scale_instrument One of `"residual_sd"` (default) or `"none"`.
 #'
 #' @return Data frame with sensitivity path.
+#' @examples
+#' set.seed(11)
+#' d <- data.frame(y = rnorm(60), x = rnorm(60), z = rnorm(60))
+#' sp_sensitivity_uci_support(y ~ x | z, d, term = "x", inst_vary = "z",
+#'   delta_grid = c(0, 0.1), grid = 5, scale_instrument = "none")
 #' @export
 sp_sensitivity_uci_support <- function(formula, data = NULL,
                                            term,
@@ -267,7 +232,7 @@ sp_sensitivity_uci_support <- function(formula, data = NULL,
   vcov <- match.arg(tolower(vcov), c("hc1", "hc0", "iid", "cluster"))
   scale_instrument <- match.arg(scale_instrument)
   inp <- .resolve_plot_inputs(formula, data)
-  if (inherits(formula, "plausexog_fit")) {
+  if (inherits(formula, "spliv_fit") || inherits(formula, "plausexog_fit")) {
     vcov <- inp$vcov
     if (missing(scale_instrument)) {
       scale_instrument <- inp$scale_instrument
@@ -300,7 +265,7 @@ sp_sensitivity_uci_support <- function(formula, data = NULL,
     steps <- if (length(grid) == 1) rep(grid, p) else grid
 
     gamma_grid <- .make_gamma_grid(gmin = gmin, gmax = gmax, steps = steps)
-    ci <- sp_uci_mats(
+    ci <- .sp_uci_mats(
       y = inp$y,
       X = inp$X,
       Z = inp$Z,
@@ -328,39 +293,15 @@ sp_sensitivity_uci_support <- function(formula, data = NULL,
   do.call(rbind, out)
 }
 
-#' @rdname sp_sensitivity_uci_support
-#' @export
-conley_sensitivity_uci_support <- function(formula, data = NULL,
-                                           term,
-                                           inst_vary,
-                                           delta_grid,
-                                           gmin_fun = function(delta) -delta,
-                                           gmax_fun = function(delta) delta,
-                                           grid = 41,
-                                           level = 0.95,
-                                           vcov = c("hc1", "hc0", "iid", "cluster"),
-                                           cluster = NULL,
-                                           scale_instrument = c("residual_sd", "none")) {
-  sp_sensitivity_uci_support(
-    formula = formula,
-    data = data,
-    term = term,
-    inst_vary = inst_vary,
-    delta_grid = delta_grid,
-    gmin_fun = gmin_fun,
-    gmax_fun = gmax_fun,
-    grid = grid,
-    level = level,
-    vcov = vcov,
-    cluster = cluster,
-    scale_instrument = scale_instrument
-  )
-}
-
 #' LTZ Sensitivity with Normal Approximation to U(0, delta)
 #'
 #' @inheritParams sp_sensitivity_ltz_normal
 #' @return Data frame with sensitivity path.
+#' @examples
+#' set.seed(12)
+#' d <- data.frame(y = rnorm(60), x = rnorm(60), z = rnorm(60))
+#' sp_sensitivity_ltz_uniform01_as_normal(y ~ x | z, d, term = "x",
+#'   inst_vary = "z", delta_grid = c(0, 0.1), scale_instrument = "none")
 #' @export
 sp_sensitivity_ltz_uniform01_as_normal <- function(formula, data = NULL,
                                                        term, inst_vary, delta_grid,
@@ -385,27 +326,6 @@ sp_sensitivity_ltz_uniform01_as_normal <- function(formula, data = NULL,
   out
 }
 
-#' @rdname sp_sensitivity_ltz_uniform01_as_normal
-#' @export
-conley_sensitivity_ltz_uniform01_as_normal <- function(formula, data = NULL,
-                                                       term, inst_vary, delta_grid,
-                                                       level = 0.95,
-                                                       vcov = c("hc1", "hc0", "iid", "cluster"),
-                                                       cluster = NULL,
-                                                       scale_instrument = c("residual_sd", "none")) {
-  sp_sensitivity_ltz_uniform01_as_normal(
-    formula = formula,
-    data = data,
-    term = term,
-    inst_vary = inst_vary,
-    delta_grid = delta_grid,
-    level = level,
-    vcov = vcov,
-    cluster = cluster,
-    scale_instrument = scale_instrument
-  )
-}
-
 .validate_sensitivity_delta_grid <- function(delta_grid) {
   delta_grid <- as.numeric(delta_grid)
   if (!length(delta_grid)) {
@@ -418,7 +338,10 @@ conley_sensitivity_ltz_uniform01_as_normal <- function(formula, data = NULL,
 }
 
 .check_sensitivity_path_dots <- function(dots) {
-  reserved <- c("formula", "data", "method", "delta", "violation_pattern")
+  reserved <- c(
+    "formula", "data", "method", "delta", "violation_pattern",
+    ".prepared", ".prepare_only", ".prepare_path_cache"
+  )
   bad_reserved <- intersect(names(dots), reserved)
   if (length(bad_reserved)) {
     stop(
@@ -430,9 +353,6 @@ conley_sensitivity_ltz_uniform01_as_normal <- function(formula, data = NULL,
 
   if (!is.null(dots$prior)) {
     stop("`spliv_sensitivity_path()` varies `delta` directly; do not supply `prior` in `...`.")
-  }
-  if (isTRUE(dots$bpe %||% FALSE)) {
-    stop("`spliv_sensitivity_path()` currently supports LTZ and UCI only; BPE is intentionally excluded.")
   }
   if (!is.null(dots$grid)) {
     if (!is.list(dots$grid)) {
@@ -449,20 +369,47 @@ conley_sensitivity_ltz_uniform01_as_normal <- function(formula, data = NULL,
   }
 }
 
-.fit_for_sensitivity_delta <- function(formula, data, method, delta, violation_pattern, dots) {
-  do.call(
-    spliv,
-    c(
-      list(
-        formula = formula,
-        data = data,
-        method = method,
-        delta = delta,
-        violation_pattern = violation_pattern
-      ),
-      dots
-    )
+.sensitivity_path_call_args <- function(formula, data, method, delta, violation_pattern, dots) {
+  c(
+    list(
+      formula = formula,
+      data = data,
+      method = method,
+      delta = delta,
+      violation_pattern = violation_pattern
+    ),
+    dots
   )
+}
+
+.prepare_sensitivity_path_design <- function(formula, data, method, violation_pattern, dots) {
+  args <- .sensitivity_path_call_args(
+    formula = formula,
+    data = data,
+    method = method,
+    delta = 0,
+    violation_pattern = violation_pattern,
+    dots = dots
+  )
+  args$.prepare_only <- TRUE
+  args$.prepare_path_cache <- TRUE
+  do.call(.spliv_impl, args)
+}
+
+.fit_for_sensitivity_delta <- function(formula, data, method, delta, violation_pattern, dots,
+                                       prepared = NULL) {
+  args <- .sensitivity_path_call_args(
+    formula = formula,
+    data = data,
+    method = method,
+    delta = delta,
+    violation_pattern = violation_pattern,
+    dots = dots
+  )
+  if (!is.null(prepared)) {
+    args$.prepared <- prepared
+  }
+  do.call(.spliv_impl, args)
 }
 
 .extract_interval_column <- function(estimates, names_to_try) {
@@ -652,7 +599,7 @@ conley_sensitivity_ltz_uniform01_as_normal <- function(formula, data = NULL,
 #' @param delta_grid Non-negative sensitivity grid. For UCI, each value `d`
 #'   implies theta bounds `[-d, +d]`.
 #' @param violation_pattern Optional `spliv_pattern()` object. If omitted, the
-#'   path uses the package's backward-compatible uniform direct-effect pattern.
+#'   path uses a uniform direct-effect pattern.
 #' @param stop_on_error Logical; if `TRUE` (default), stop on the first failed
 #'   fit. If `FALSE`, record `NA` rows and store the error message in the
 #'   returned `error` column.
@@ -690,6 +637,20 @@ spliv_sensitivity_path <- function(formula,
   dots <- list(...)
   .check_sensitivity_path_dots(dots)
 
+  prepared <- tryCatch(
+    .prepare_sensitivity_path_design(
+      formula = formula,
+      data = data,
+      method = method,
+      violation_pattern = violation_pattern,
+      dots = dots
+    ),
+    error = function(e) e
+  )
+  if (inherits(prepared, "error")) {
+    stop("Failed to fit the baseline sensitivity model at delta = 0: ", conditionMessage(prepared), call. = FALSE)
+  }
+
   baseline_fit <- tryCatch(
     .fit_for_sensitivity_delta(
       formula = formula,
@@ -697,7 +658,8 @@ spliv_sensitivity_path <- function(formula,
       method = method,
       delta = 0,
       violation_pattern = violation_pattern,
-      dots = dots
+      dots = dots,
+      prepared = prepared
     ),
     error = function(e) e
   )
@@ -721,7 +683,8 @@ spliv_sensitivity_path <- function(formula,
           method = method,
           delta = delta_i,
           violation_pattern = violation_pattern,
-          dots = dots
+          dots = dots,
+          prepared = prepared
         ),
         error = function(e) e
       )
@@ -846,10 +809,14 @@ spliv_tipping_point <- function(x) {
 
 #' Plot Patterned Sensitivity Output or a Fitted Object
 #'
-#' @param df_plot Data frame returned by a sensitivity helper or `plausexog_fit` object.
+#' @param df_plot Data frame returned by a sensitivity helper or a `spliv_fit` object.
+#' @param term Optional term to plot when `df_plot` is a sensitivity-path
+#'   object. If omitted, the first term is plotted (with a warning for multiple
+#'   terms).
 #' @param ylab Y-axis label.
 #' @param main Plot title.
-#' @param ... Unused.
+#' @param ... Additional graphics arguments forwarded to the sensitivity-path
+#'   plotting method; ignored for fitted objects and ordinary data frames.
 #'
 #' @return Invisibly returns the plotted input.
 #' @examples
@@ -859,12 +826,14 @@ spliv_tipping_point <- function(x) {
 #' plot_sp_sensitivity(p, term = "x")
 #' @export
 plot_sp_sensitivity <- function(df_plot,
+                                    term = NULL,
                                     ylab = "Effect (beta)",
                                     main = "Plausibly Exogenous IV Sensitivity",
                                     ...) {
   if (inherits(df_plot, "spliv_sensitivity_path")) {
     .plot_spliv_sensitivity_path(
       x = df_plot,
+      term = term,
       ylab = ylab,
       main = main,
       ...
@@ -872,16 +841,26 @@ plot_sp_sensitivity <- function(df_plot,
     return(invisible(df_plot))
   }
 
-  if (inherits(df_plot, "plausexog_fit")) {
+  if (inherits(df_plot, "spliv_fit") || inherits(df_plot, "plausexog_fit")) {
     est <- df_plot$estimates
     x <- seq_len(nrow(est))
+    point <- est$estimate %||% rep(NA_real_, nrow(est))
+    if (!any(is.finite(point)) && all(c("conf.low", "conf.high") %in% names(est))) {
+      point <- (est$conf.low + est$conf.high) / 2
+    }
+    finite_limits <- c(point, est$conf.low %||% numeric(0), est$conf.high %||% numeric(0))
+    finite_limits <- finite_limits[is.finite(finite_limits)]
+    if (!length(finite_limits)) {
+      stop("The fitted object contains no finite estimates or confidence limits to plot.")
+    }
     graphics::plot(
       x,
-      est$estimate %||% rep(NA_real_, nrow(est)),
+      point,
       xaxt = "n",
       xlab = "Term",
       ylab = ylab,
       main = main,
+      ylim = range(finite_limits),
       pch = 19
     )
     graphics::axis(1, at = x, labels = est$term, las = 2, cex.axis = 0.7)
@@ -939,31 +918,24 @@ plot_sp_sensitivity <- function(df_plot,
 }
 
 #' @export
-plot.plausexog_fit <- function(x, ...) {
+plot.spliv_fit <- function(x, ...) {
   plot_sp_sensitivity(x, ...)
 }
 
 #' @export
+plot.plausexog_fit <- function(x, ...) {
+  plot.spliv_fit(x, ...)
+}
+
+#' @export
 plot.spliv_sensitivity_path <- function(x,
+                                        term = NULL,
                                         ylab = "Effect (beta)",
                                         main = "SPLIV Sensitivity Path",
                                         ...) {
   .plot_spliv_sensitivity_path(
     x = x,
-    ylab = ylab,
-    main = main,
-    ...
-  )
-}
-
-#' @rdname plot_sp_sensitivity
-#' @export
-plot_conley_sensitivity <- function(df_plot,
-                                    ylab = "Effect (beta)",
-                                    main = "Plausibly Exogenous IV Sensitivity",
-                                    ...) {
-  plot_sp_sensitivity(
-    df_plot = df_plot,
+    term = term,
     ylab = ylab,
     main = main,
     ...

@@ -1,18 +1,19 @@
 ## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(spliv)
-set.seed(2026)
+set.seed(42)
 n <- 240
 z <- rnorm(n)
 w <- rnorm(n)
+exposure <- pnorm(w)
 inactive <- seq_len(n) <= n / 2
 x <- ifelse(inactive, 0, 1) * z + 0.4 * w + rnorm(n)
-y <- 1.2 * x + 0.25 * w + 0.15 * z + rnorm(n)
-d <- data.frame(y, x, z, w, inactive)
+y <- 1.2 * x + 0.25 * w + 0.15 * exposure * z + rnorm(n)
+d <- data.frame(y, x, z, w, exposure, inactive)
 f <- y ~ x + w | z + w
 
 ## ----baseline-----------------------------------------------------------------
-baseline <- spliv(f, d, method = "uci", delta = 0, vcov = "hc1")
+baseline <- spliv(f, d, vcov = "hc1")
 baseline$estimates
 uniform <- spliv(f, d, method = "uci", delta = 0.20, vcov = "hc1",
                  grid = list(steps = 9))
@@ -20,9 +21,9 @@ uniform$estimates
 
 ## ----pattern------------------------------------------------------------------
 pattern <- spliv_pattern(
-  name = "Exposure pattern", pattern = ~ w,
+  name = "Exposure pattern", pattern = ~ exposure,
   rationale = "The alternative channel is stronger at higher exposure.",
-  variables_used = "w", pattern_type = "theory_defined",
+  variables_used = "exposure", pattern_type = "theory_defined",
   normalize = "max_abs"
 )
 spliv_eval_pattern(pattern, d)[1:5]
@@ -49,17 +50,17 @@ design <- bpe_design(
   pre_specified = TRUE,
   transportability_rationale = "The subset direct effect is informative for the target sample."
 )
+# Illustrative synthetic margin: 0.25 residual treatment SD per
+# one-residual-SD instrument shift. In substantive work, pre-specify the
+# margin rather than tuning it to obtain BPE eligibility.
+bpe_margin <- 0.25
 validation <- bpe_validate_design(
   f, d, design = design, vcov = "hc1",
   bpe_min_n_S = 40,
-  bpe_equiv_margin = 0.25 * sd(resid(lm(x ~ w)))
+  bpe_equiv_margin = bpe_margin
 )
 validation[c("n_S", "equivalence_passed", "eligibility_passed")]
 
-# Illustrative synthetic scale only. In a substantive analysis, pre-specify
-# the equivalence margin from the scientific design rather than tuning it to
-# obtain BPE eligibility.
-bpe_margin <- 0.25 * sd(resid(lm(x ~ w)))
 bpe_fit <- spliv(f, d, method = "bpe", bpe_design = design,
                  vcov = "hc1", bpe_min_n_S = 40,
                  bpe_equiv_margin = bpe_margin)
